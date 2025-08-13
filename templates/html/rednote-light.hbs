@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1080, initial-scale=1.0">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            width: 1080px;
+            height: 1440px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 50%, #e9ecef 100%);
+            position: relative;
+            overflow: hidden;
+            color: #212529;
+        }
+        
+        /* 背景动态网格 */
+        .grid-background {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: grid-move 20s linear infinite;
+        }
+        
+        @keyframes grid-move {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(60px, 60px); }
+        }
+        
+        /* 发光效果 */
+        .glow-orb {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100,200,255,0.15) 0%, transparent 70%);
+            filter: blur(60px);
+            animation: float 15s ease-in-out infinite;
+        }
+        
+        .glow-orb:nth-child(1) {
+            top: -200px;
+            left: -200px;
+            animation-delay: 0s;
+        }
+        
+        .glow-orb:nth-child(2) {
+            bottom: -200px;
+            right: -200px;
+            background: radial-gradient(circle, rgba(255,100,150,0.15) 0%, transparent 70%);
+            animation-delay: 5s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -30px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 10;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 10px 10px 10px 10px;
+        }
+        
+        /* 页眉 */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 80px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 20px;
+            color: #ffffff;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: 600;
+            color: rgba(33,37,41,0.9);
+            letter-spacing: 0.5px;
+        }
+        
+        .date-badge {
+            background: rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 14px;
+            color: rgba(33,37,41,0.7);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            padding: 30px 60px;
+            padding-top: 30px;
+        }
+        
+        /* Full content mode when no title/subtitle */
+        .main-content.content-only {
+            justify-content: center;
+             padding-top: 0px;
+        }
+        
+        .main-content.content-only .content {
+            font-size: 48px;
+            line-height: 2;
+        }
+        
+        .title-wrapper {
+            margin-bottom: 5px;
+            text-align: center;
+        }
+        
+        .accent-line {
+            width: 430px;
+            height: 5px;
+            background: linear-gradient(
+                90deg, 
+                rgba(0,123,255,0) 0%, 
+                #007bff 30%, 
+                #6f42c1 70%, 
+                rgba(111,66,193,0) 100%
+            );
+            border-radius: 4px;
+            margin: 0 auto 18px;
+            box-shadow: 0 0 32px 0 rgba(0,123,255,0.25), 0 2px 12px 0 rgba(111,66,193,0.12);
+            transition: box-shadow 0.3s;
+        }
+        
+        h1 {
+            font-size: 86px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #212529 0%, #007bff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 80px rgba(0,123,255,0.2);
+            letter-spacing: -1px;
+            text-align: center;
+        }
+        
+        h2 {
+            font-size: 48px;
+            font-weight: 600;
+            color: rgba(33,37,41,0.85);
+            line-height: 1.3;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+            text-align: center;
+        }
+        
+        .content {
+            font-size: 42px;
+            line-height: 1.9;
+            color: rgba(33,37,41,0.85);
+            max-width: 100%;
+            letter-spacing: 0.4px;
+            font-weight: 400;
+        }
+        
+        .content p {
+            margin: 0 0 0 0;
+        }
+        
+        .content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* 移除content-card，内容直接显示 */
+        
+        /* 页脚 */
+        footer {
+            margin-top: auto;
+            padding-top: 10px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+        }
+        
+        
+        .copyright {
+            font-size: 13px;
+            color: rgba(33,37,41,0.4);
+            text-align: center;
+            line-height: 1.4;
+        }
+        
+        /* 装饰元素 */
+        .tech-decoration {
+            position: absolute;
+            right: 60px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            height: 300px;
+            opacity: 0.1;
+        }
+        
+        .tech-decoration svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="grid-background"></div>
+    <div class="glow-orb"></div>
+    <div class="glow-orb"></div>
+    
+    <div class="container">
+        {{#if showHeader}}
+        <header>
+            <div class="logo">
+                <div class="logo-icon">AI</div>
+                <div class="logo-text">TechNews</div>
+            </div>
+            <div class="date-badge">
+                <script>document.write(new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' }))</script>
+            </div>
+        </header>
+        {{/if}}
+        
+        <div class="main-content{{#unless title}}{{#unless subtitle}} content-only{{/unless}}{{/unless}}">
+            {{#if title}}
+            <div class="title-wrapper">
+                
+                <h1>{{title}}</h1>
+                {{#if subtitle}}
+                <h2>{{subtitle}}</h2>
+                {{/if}}
+            </div>
+            <div class="accent-line"></div>
+            {{else}}
+                {{#if subtitle}}
+                <div class="title-wrapper">
+                    
+                    <h2>{{subtitle}}</h2>
+                </div>
+                <div class="accent-line"></div>
+                {{/if}}
+            {{/if}}
+            
+            <div class="content">
+                {{{content}}}
+            </div>
+        </div>
+        
+        {{#if showFooter}}
+        <footer>
+            
+            <div class="copyright">
+                © DARKHORSEONE LIMITED darkhorseone.co.uk
+            </div>
+        </footer>
+        {{/if}}
+    </div>
+    
+    <div class="tech-decoration">
+        <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="techGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#007bff;stop-opacity:0.5" />
+                    <stop offset="100%" style="stop-color:#6f42c1;stop-opacity:0.5" />
+                </linearGradient>
+            </defs>
+            <circle cx="150" cy="150" r="140" fill="none" stroke="url(#techGrad)" stroke-width="1" opacity="0.3"/>
+            <circle cx="150" cy="150" r="100" fill="none" stroke="url(#techGrad)" stroke-width="1" opacity="0.4"/>
+            <circle cx="150" cy="150" r="60" fill="none" stroke="url(#techGrad)" stroke-width="1" opacity="0.5"/>
+        </svg>
+    </div>
+    
+    <script>
+        // 处理content中的换行符，转换为段落
+        document.addEventListener('DOMContentLoaded', function() {
+            const contentEl = document.querySelector('.content');
+            if (contentEl) {
+                let content = contentEl.innerHTML.trim();
+                
+                // 将单个换行符替换为<br>
+                content = content.replace(/\n/g, '<br>');
+                
+                contentEl.innerHTML = content;
+            }
+        });
+    </script>
+</body>
+</html>

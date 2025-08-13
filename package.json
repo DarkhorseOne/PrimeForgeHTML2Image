@@ -1,0 +1,20 @@
+{
+  "name": "html-to-image-service",
+  "version": "1.1.0",
+  "type": "module",
+  "main": "server.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "NODE_ENV=development PORT=3515 node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "pino": "^9.4.0",
+    "pino-http": "^10.3.0",
+    "playwright": "^1.46.0",
+    "zod": "^3.23.8",
+    "handlebars": "^4.7.8"
+  }
+}

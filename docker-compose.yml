@@ -1,0 +1,24 @@
+version: "3.9"
+services:
+  html2img:
+    build: .
+    image: html-to-image:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DEFAULT_DPR=2
+      - MAX_WIDTH=4096
+      - MAX_HEIGHT=4096
+      - MAX_PIXELS=16000000
+      - BLOCK_EXTERNAL=true
+      - ALLOW_URL=false
+      - ALLOWLIST_DOMAINS=example.com,*.your-domain.com
+      - ALLOW_ORIGINS=https://n8n.your-domain.com
+      - TEMPLATES_DIR=/app/templates
+      - PRESETS_PATH=/app/templates/presets/presets.json
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1024M

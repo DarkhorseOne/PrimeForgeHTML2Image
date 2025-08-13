@@ -1,0 +1,42 @@
+{
+  "sizes": {
+    "twitter_card": {
+      "width": 1200,
+      "height": 630
+    },
+    "square_1080": {
+      "width": 1080,
+      "height": 1080
+    },
+    "story_1080x1920": {
+      "width": 1080,
+      "height": 1920
+    },
+    "banner_1920x480": {
+      "width": 1920,
+      "height": 480
+    },
+    "rednote_1080x1440": {
+      "width": 1080,
+      "height": 1440
+    },
+    "rednote_1080x1080": {
+      "width": 1080,
+      "height": 1080
+    }
+  },
+  "clips": {
+    "top_banner": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 300
+    },
+    "left_panel": {
+      "x": 0,
+      "y": 0,
+      "width": 600,
+      "height": 1080
+    }
+  }
+}
