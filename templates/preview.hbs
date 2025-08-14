@@ -879,7 +879,7 @@
             
             // Image generation
             promises.push(
-                fetch('/render', {
+                fetch('render', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -910,7 +910,7 @@
             
             // HTML generation
             promises.push(
-                fetch('/render-html', {
+                fetch('render-html', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
