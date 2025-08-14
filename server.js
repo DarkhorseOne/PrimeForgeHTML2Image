@@ -7,6 +7,8 @@ import { z } from 'zod';
 import fs from 'node:fs';
 import path from 'node:path';
 import Handlebars from 'handlebars';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpec from './swagger.js';
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'production';
@@ -174,13 +176,134 @@ function enforceSize({ width, height }) {
   return { width: w, height: h };
 }
 
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Service homepage
+ *     description: Landing page with service information and usage examples
+ *     tags:
+ *       - UI
+ *     responses:
+ *       200:
+ *         description: Homepage HTML
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ */
+app.get('/', (req, res) => {
+  // Read package.json for service info
+  const packageInfo = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'package.json'), 'utf8'));
+  
+  // Get available templates
+  const templates = fs.readdirSync(path.join(TEMPLATES_DIR, 'html'))
+    .filter(f => f.endsWith('.hbs'))
+    .map(f => f.replace('.hbs', ''));
+  
+  // Get sizes
+  const sizes = PRESETS.sizes || {};
+  
+  // Compile and render the index template
+  const indexTemplate = fs.readFileSync(path.join(TEMPLATES_DIR, 'index.hbs'), 'utf8');
+  const compiledIndex = Handlebars.compile(indexTemplate);
+  
+  const baseUrl = req.protocol + '://' + req.get('host');
+  
+  const html = compiledIndex({
+    name: packageInfo.name,
+    version: packageInfo.version,
+    description: packageInfo.description || 'A service that converts HTML templates to images using Playwright',
+    license: packageInfo.license,
+    templates: templates,
+    sizes: sizes,
+    baseUrl: baseUrl
+  });
+  
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(html);
+});
+
+/**
+ * @swagger
+ * /healthz:
+ *   get:
+ *     summary: Health check endpoint
+ *     description: Returns the health status of the service
+ *     tags:
+ *       - System
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ */
 app.get('/healthz', (req, res) => res.json({ ok: true }));
 
+/**
+ * @swagger
+ * /presets:
+ *   get:
+ *     summary: Get available presets
+ *     description: Returns all available size presets, clip presets, and font size presets
+ *     tags:
+ *       - Configuration
+ *     responses:
+ *       200:
+ *         description: Available presets
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 sizes:
+ *                   type: object
+ *                   description: Size presets
+ *                 clips:
+ *                   type: object
+ *                   description: Clip region presets
+ *                 fontSizes:
+ *                   type: object
+ *                   description: Font size presets
+ */
 app.get('/presets', (req, res) => {
   res.json(PRESETS);
 });
 
-// HTML template rendering route
+/**
+ * @swagger
+ * /render-html:
+ *   post:
+ *     summary: Render HTML from template
+ *     description: Renders a template with provided data and returns the HTML
+ *     tags:
+ *       - Rendering
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RenderHtmlRequest'
+ *     responses:
+ *       200:
+ *         description: Rendered HTML
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 app.post('/render-html', (req, res) => {
   const { templateName, templateData } = req.body;
   
@@ -200,7 +323,22 @@ app.post('/render-html', (req, res) => {
   }
 });
 
-// Preview UI route
+/**
+ * @swagger
+ * /preview:
+ *   get:
+ *     summary: Template preview UI
+ *     description: Returns an interactive UI for testing templates
+ *     tags:
+ *       - UI
+ *     responses:
+ *       200:
+ *         description: Preview UI HTML page
+ *         content:
+ *           text/html:
+ *             schema:
+ *               type: string
+ */
 app.get('/preview', (req, res) => {
   // Read available templates dynamically
   const templates = fs.readdirSync(path.join(TEMPLATES_DIR, 'html'))
@@ -258,6 +396,43 @@ app.get('/preview', (req, res) => {
   res.send(html);
 });
 
+/**
+ * @swagger
+ * /render:
+ *   post:
+ *     summary: Render HTML to image
+ *     description: Converts HTML content or template to an image
+ *     tags:
+ *       - Rendering
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RenderRequest'
+ *     responses:
+ *       200:
+ *         description: Generated image
+ *         content:
+ *           image/png:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/jpeg:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *           image/webp:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 app.post('/render', async (req, res) => {
   const parsed = RenderSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -347,6 +522,26 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
+// Setup Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'HTML to Image API Documentation'
+}));
+
+/**
+ * @swagger
+ * /api-docs:
+ *   get:
+ *     summary: API Documentation
+ *     description: Interactive Swagger UI documentation
+ *     tags:
+ *       - Documentation
+ *     responses:
+ *       200:
+ *         description: Swagger UI page
+ */
+
 app.listen(PORT, () => {
   logger.info(`HTML→Image service listening on :${PORT} (env=${NODE_ENV})`);
+  logger.info(`API Documentation available at http://localhost:${PORT}/api-docs`);
 });
