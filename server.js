@@ -86,6 +86,17 @@ function isWhitelisted(u) {
 
 let browser;
 async function getBrowser() {
+  // Check if browser exists and is still connected
+  if (browser) {
+    try {
+      // Test if browser is still alive by checking contexts
+      await browser.contexts();
+    } catch (err) {
+      logger.warn('Browser instance disconnected, recreating...');
+      browser = null;
+    }
+  }
+  
   if (!browser) {
     browser = await chromium.launch({
       args: [
@@ -103,31 +114,53 @@ async function getBrowser() {
 }
 
 async function withPage(fn) {
-  const br = await getBrowser();
-  const context = await br.newContext({
-    deviceScaleFactor: DEFAULT_DPR,
-    javaScriptEnabled: true,
-    viewport: { width: 1200, height: 630 },
-    bypassCSP: false,
-  });
+  let retries = 3;
+  let lastError;
+  
+  while (retries > 0) {
+    try {
+      const br = await getBrowser();
+      const context = await br.newContext({
+        deviceScaleFactor: DEFAULT_DPR,
+        javaScriptEnabled: true,
+        viewport: { width: 1200, height: 630 },
+        bypassCSP: false,
+      });
 
-  // network control
-  await context.route('**/*', (route) => {
-    if (!BLOCK_EXTERNAL) return route.continue();
-    const req = route.request();
-    const url = req.url();
-    if (url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
-    if (ALLOW_URL && isWhitelisted(url)) return route.continue();
-    return route.abort();
-  });
+      // network control
+      await context.route('**/*', (route) => {
+        if (!BLOCK_EXTERNAL) return route.continue();
+        const req = route.request();
+        const url = req.url();
+        if (url.startsWith('data:') || url.startsWith('blob:')) return route.continue();
+        if (ALLOW_URL && isWhitelisted(url)) return route.continue();
+        return route.abort();
+      });
 
-  const page = await context.newPage();
-  try {
-    return await fn(page);
-  } finally {
-    await page.close();
-    await context.close();
+      const page = await context.newPage();
+      try {
+        return await fn(page);
+      } finally {
+        await page.close();
+        await context.close();
+      }
+    } catch (err) {
+      lastError = err;
+      retries--;
+      
+      // If browser is closed, reset it
+      if (err.message && err.message.includes('Target page, context or browser has been closed')) {
+        logger.warn(`Browser error, retrying... (${3 - retries}/3)`);
+        browser = null;
+        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay before retry
+      } else {
+        // For other errors, don't retry
+        throw err;
+      }
+    }
   }
+  
+  throw lastError;
 }
 
 const RenderSchema = z.object({
