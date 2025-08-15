@@ -1,8 +1,14 @@
 {
   "name": "html-to-image-service",
   "version": "1.1.1",
-  "description": "A high-performance service that converts HTML templates to images using Playwright",
+  "description": "A PrimeForge tools set. A high-performance service that converts HTML templates to images using Playwright",
   "type": "module",
+  "author": "Nick Ma",
+  "email": "honeyday.mj@gmail.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/primeforge/html-to-image-service"
+  },
   "main": "server.js",
   "license": "MIT",
   "scripts": {

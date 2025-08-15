@@ -1,5 +1,7 @@
 # HTML to Image Service
 
+A PrimeForge tools set.
+
 Self-hosted API for rendering **HTML/CSS** (or a whitelisted URL, or a Handlebars template) into **PNG/JPEG/WebP**. 
 
 ## Features
@@ -259,6 +261,110 @@ For custom fonts, add them to the `fonts/` directory and rebuild:
 COPY ./fonts /usr/share/fonts/custom
 RUN fc-cache -f -v
 ```
+
+## Technical Architecture
+
+### Rendering Process Flow
+
+The following flowchart illustrates the technical implementation of how text/HTML is rendered to images using the headless browser:
+
+```mermaid
+flowchart TD
+    Start([Client Request<br/>POST /render]) --> Validate{Validate Input<br/>Zod Schema}
+    
+    Validate -->|Invalid| Error1[Return 400 Error]
+    Validate -->|Valid| CheckInput{Check Input Type}
+    
+    CheckInput -->|Template| LoadTemplate[Load Handlebars Template<br/>from templates/html/*.hbs]
+    CheckInput -->|HTML| UseHTML[Use Direct HTML]
+    CheckInput -->|URL| CheckURL{URL Allowed?}
+    
+    CheckURL -->|No| Error2[Return Error:<br/>URL not allowed]
+    CheckURL -->|Yes| CheckWhitelist{Domain in<br/>Whitelist?}
+    CheckWhitelist -->|No| Error3[Return Error:<br/>Domain not whitelisted]
+    CheckWhitelist -->|Yes| UseURL[Use External URL]
+    
+    LoadTemplate --> CompileTemplate[Compile Template<br/>with Data]
+    CompileTemplate --> GenerateHTML[Generate HTML String]
+    
+    GenerateHTML --> ApplyCSS{CSS Provided?}
+    UseHTML --> ApplyCSS
+    UseURL --> GetBrowser
+    
+    ApplyCSS -->|Yes| InjectCSS[Inject CSS into<br/>head tag]
+    ApplyCSS -->|No| GetBrowser
+    InjectCSS --> GetBrowser
+    
+    GetBrowser[Get/Create Browser Instance<br/>Chromium via Playwright]
+    GetBrowser --> CreateContext[Create Browser Context<br/>- Set deviceScaleFactor<br/>- Configure viewport<br/>- Setup network control]
+    
+    CreateContext --> NetworkControl{Block External<br/>Resources?}
+    NetworkControl -->|Yes| RouteNetwork[Route Network:<br/>Block non-data/blob URLs<br/>except whitelisted]
+    NetworkControl -->|No| CreatePage
+    RouteNetwork --> CreatePage
+    
+    CreatePage[Create New Page] --> SetViewport[Set Viewport Size<br/>Width × Height]
+    SetViewport --> LoadContent{Content Type}
+    
+    LoadContent -->|HTML/Template| SetContent[page.setContent<br/>Load HTML into page]
+    LoadContent -->|URL| Navigate[page.goto<br/>Navigate to URL]
+    
+    SetContent --> WaitReady[Wait Until Ready<br/>- load<br/>- domcontentloaded<br/>- networkidle]
+    Navigate --> WaitReady
+    
+    WaitReady --> WaitExtra{Additional<br/>Wait?}
+    WaitExtra -->|Timeout| WaitTimeout[Wait for X ms]
+    WaitExtra -->|Selector| WaitSelector[Wait for CSS Selector]
+    WaitExtra -->|No| SetDPR
+    
+    WaitTimeout --> SetDPR
+    WaitSelector --> SetDPR
+    
+    SetDPR[Set Device Pixel Ratio<br/>Override window.devicePixelRatio]
+    SetDPR --> ConfigShot[Configure Screenshot Options<br/>- Format: png/jpeg/webp<br/>- Quality<br/>- Full page<br/>- Background<br/>- Clip region]
+    
+    ConfigShot --> TakeShot[page.screenshot<br/>Capture Image]
+    TakeShot --> CleanupPage[Close Page & Context]
+    
+    CleanupPage --> ReturnImage[Return Image Buffer<br/>with Content-Type header]
+    
+    ReturnImage --> End([Image Response<br/>to Client])
+    
+    style Start fill:#e1f5e1
+    style End fill:#e1f5e1
+    style Error1 fill:#ffe1e1
+    style Error2 fill:#ffe1e1
+    style Error3 fill:#ffe1e1
+    style GetBrowser fill:#e1e5ff
+    style TakeShot fill:#fff3e1
+```
+
+### Key Implementation Details
+
+1. **Browser Lifecycle Management**:
+   - Singleton browser instance persists across requests
+   - Automatic reconnection if browser disconnects
+   - Retry logic (3 attempts) for browser errors
+   - Graceful shutdown on SIGTERM
+
+2. **Security Layers**:
+   - Input validation with Zod schemas
+   - URL allowlist enforcement
+   - Network request blocking for external resources
+   - Sandboxed page contexts (isolated per request)
+   - Size limits to prevent resource exhaustion
+
+3. **Performance Optimizations**:
+   - Template caching in production mode
+   - Hot-reloading in development mode
+   - Configurable DPR for quality vs speed tradeoff
+   - Browser instance reuse across requests
+
+4. **Error Handling**:
+   - Comprehensive error catching at each stage
+   - Automatic browser restart on crashes
+   - Detailed error logging with Pino
+   - Client-friendly error messages
 
 ## Security
 
